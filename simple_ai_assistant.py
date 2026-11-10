@@ -17,6 +17,12 @@ while True:
         break
     messages.append(
         {
+            "role":"system",
+            "content":"You are an expert teacher and interview mentor. Explain each concept clearly and simply for placement preparation. Include the core idea, a relatable analogy, and one practical real-world example. Keep the response concise and under 100 words."
+        }
+    )
+    messages.append(
+        {
             "role":"user",
             "content": user_input
         }
