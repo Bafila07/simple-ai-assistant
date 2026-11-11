@@ -11,7 +11,8 @@ def get_city_weather(city):
     else:
         return f"Could not retrieve weather for {city}. Please try again later."
 
-
+def get_user_city():
+    return "Dehradun"
 
 # Tool definition given to the AI   
 TOOLS = [
@@ -43,10 +44,25 @@ TOOLS = [
                 "required": ["city"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_user_city",
+            "description": "Returns the user's saved city. Call this tool when the user asks questions such as “Where do I live?” or “What city am I from?” Do not use it for weather or other location-related requests.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
     }  
 ]
 
 function_name_to_function_map={
+    
     "get_current_time": get_current_time,
     "get_city_weather": get_city_weather,
+    "get_user_city": get_user_city
+
 }

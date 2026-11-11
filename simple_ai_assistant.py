@@ -22,7 +22,6 @@ messages = [
     }
 ]
 
-
 while True:
 
     # 1. Get user input
@@ -38,20 +37,21 @@ while True:
         "content": user_input
     })
 
-    # 3. Ask the LLM
-    response = client.chat.completions.create(
-        model=os.getenv("OLLAMA_MODEL"),
-        messages=messages,
-        tools=TOOLS
-    )
+    # 3. Ask the assistant for a response
+    while True:
+        response = client.chat.completions.create(
+            model=os.getenv("OLLAMA_MODEL"),
+            messages=messages,
+            tools=TOOLS
+        )
 
-    assistant_message = response.choices[0].message
+        assistant_message = response.choices[0].message
 
-    # 4. Did the LLM ask for a tool?
-    if assistant_message.tool_calls:
-
-        # Save the assistant's tool request
+        # 4. Save assistant message
         messages.append(assistant_message)
+
+        if not assistant_message.tool_calls:
+            break
 
         # 5. Run the requested tool
         for tool_call in assistant_message.tool_calls:
@@ -66,6 +66,7 @@ while True:
 
             result = tool_function(**tool_args)
 
+
             # 6. Save tool result
             messages.append({
                 "role": "tool",
@@ -73,19 +74,6 @@ while True:
                 "content": str(result)
             })
 
-        # 7. Ask LLM again
-        response = client.chat.completions.create(
-            model=os.getenv("OLLAMA_MODEL"),
-            messages=messages
-        )
 
-        assistant_message = response.choices[0].message
-
-    # 8. Save assistant's final answer
-    messages.append({
-        "role": "assistant",
-        "content": assistant_message.content
-    })
-
-    # 9. Print
+    # 7. Print the assistant's response
     print("Assistant:", assistant_message.content)
