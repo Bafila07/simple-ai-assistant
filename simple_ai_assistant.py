@@ -22,6 +22,10 @@ messages = [
     }
 ]
 
+# Maximum number of steps to take
+MAX_STEPS = 5
+
+
 while True:
 
     # 1. Get user input
@@ -38,7 +42,7 @@ while True:
     })
 
     # 3. Ask the assistant for a response
-    while True:
+    for _ in range(MAX_STEPS):
         response = client.chat.completions.create(
             model=os.getenv("OLLAMA_MODEL"),
             messages=messages,
@@ -57,15 +61,14 @@ while True:
         for tool_call in assistant_message.tool_calls:
 
             tool_name = tool_call.function.name
+            tool_args={}
+            try:
+                tool_args = json.loads(tool_call.function.arguments or "{}")
+                tool_function = function_name_to_function_map.get(tool_name)
+                result=tool_function(**tool_args)
 
-            tool_args = json.loads(
-                tool_call.function.arguments
-            )
-
-            tool_function = function_name_to_function_map[tool_name]
-
-            result = tool_function(**tool_args)
-
+            except Exception as e:
+                result=f"Error executing tool {tool_name}: {str(e)}"
 
             # 6. Save tool result
             messages.append({
@@ -74,6 +77,14 @@ while True:
                 "content": str(result)
             })
 
+    else:
+        fallback="Sorry, I couldn't provide a complete answer. Reached the maximum number of steps."
+        messages.append({
+            "role": "assistant",
+            "content": fallback
+        })
+        print("Assistant:", fallback)
+        continue
 
     # 7. Print the assistant's response
     print("Assistant:", assistant_message.content)
