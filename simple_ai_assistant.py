@@ -1,5 +1,6 @@
 # Standard library imports
 import os
+from types import SimpleNamespace
 
 # Third-party imports
 from dotenv import load_dotenv
@@ -34,7 +35,97 @@ messages = [
 
 # Maximum number of agent steps allowed
 MAX_STEPS = 5
+def stream_chat(history):
+    """
+    Stream the chat response from the model.
 
+    Args:
+        history (list): The conversation history.   
+
+    Returns:
+        tuple: A tuple containing the full response and a list of tool calls.
+    """
+    stream = client.chat.completions.create(
+        model=os.getenv("OLLAMA_MODEL"),
+        messages=history,
+        tools=TOOLS,
+        stream=True,
+    )
+
+    full_response = ""
+    calls={}
+    label_printed = False
+
+    for chunk in stream:
+        if not chunk.choices:
+            continue
+
+        delta = chunk.choices[0].delta
+
+        # Display normal text immediately
+        if delta.content:
+            if not label_printed:
+                print("Assistant:    ", end="", flush=True)
+                label_printed = True
+            print(delta.content, end="", flush=True)
+            full_response += delta.content
+
+
+
+        # Collect streamed tool-call fragments
+        for tool_call in delta.tool_calls or []:
+            index = tool_call.index
+
+            # Create a new tool call when its first fragment arrives
+            call = calls.setdefault(
+                index,
+                SimpleNamespace(
+                    id="",
+                    function=SimpleNamespace(
+                        name="",
+                        arguments="",
+                    ),
+                ),
+            )
+
+            # Combine the streamed fragments
+            if tool_call.id:
+                call.id = tool_call.id
+
+            if tool_call.function:
+                if tool_call.function.name:
+                    call.function.name += tool_call.function.name
+
+                if tool_call.function.arguments:
+                    call.function.arguments += tool_call.function.arguments
+                    
+    if label_printed:
+        print()
+    return full_response, list(calls.values())
+
+def build_tool_calls_payload(tool_calls):
+    """
+    Build a list of tool call payloads for the assistant's message.
+
+    Args:
+        tool_calls (list): A list of tool call objects.
+
+    Returns:
+        list: A list of tool call payloads.
+    """
+
+    payloads = []
+    for tool_call in tool_calls:
+        payload = {
+            "id": tool_call.id,
+            "type": "function",
+            "function": {
+                "name": tool_call.function.name,
+                "arguments": tool_call.function.arguments
+            }
+        }
+        payloads.append(payload)
+    return payloads
 
 while True:
 
@@ -59,31 +150,31 @@ while True:
     for step in range(MAX_STEPS):
 
         # Send the conversation and available tools to the LLM
-        response = client.chat.completions.create(
-            model=os.getenv("OLLAMA_MODEL"),
-            messages=messages,
-            tools=TOOLS
-        )
+        full_response,tool_calls = stream_chat(messages)
 
-        # Get the LLM's response
-        assistant_message = response.choices[0].message
 
         # 4. Save the LLM response to the conversation history
-        messages.append(assistant_message)
+        messages.append(
+            {
+                "role": "assistant",
+                "content": full_response,
+                "tool_calls": build_tool_calls_payload(tool_calls)
+            }
+        )
 
         # If the LLM does not request a tool, this is the final answer
-        if not assistant_message.tool_calls:
+        if not tool_calls:
             completed = True
             break
 
         # Log how many tools the LLM wants to use
         log(
             f"Step {step + 1}: model requested tool calls :"
-            f"{len(assistant_message.tool_calls)} tool_calls"
+            f"{len(tool_calls)} tool_calls"
         )
 
         # 5. Execute each tool requested by the LLM
-        for tool_call in assistant_message.tool_calls:
+        for tool_call in tool_calls:
 
             # Send the tool call to the tool executor
             result = run_tool(tool_call)
@@ -112,6 +203,3 @@ while True:
 
         print("Assistant:", fallback)
         continue
-
-    # 7. Print the final answer from the LLM
-    print("Assistant:", assistant_message.content or "")
