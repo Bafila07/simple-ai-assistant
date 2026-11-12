@@ -21,9 +21,16 @@ stream = client.chat.completions.create(
     stream=True,
 )
 
+
+
+assigned = False
+full_response=""
 for chunk in stream:
     piece = chunk.choices[0].delta.content
+    if piece and assigned == False:
+        print("Assistant:    ", end="", flush=True)
+        assigned = True
     if piece:
         print(piece, end="", flush=True)
-
-print()
+        full_response += piece
+        

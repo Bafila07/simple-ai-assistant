@@ -40,3 +40,26 @@ The agent can now:
 ### Key Learning
 
 Tools extend an agent’s capabilities; they should not restrict what it can answer.
+
+
+## 2. Streaming Responses
+
+### Problem
+
+The agent waited for the complete response before displaying anything, making it feel slow.
+
+### Cause
+
+The response was generated and returned all at once instead of being streamed in chunks.
+
+### Solution
+
+Enable streaming with `stream=True` and print each received chunk immediately.
+
+### Result
+
+The agent now displays responses progressively, making it feel faster and more like ChatGPT.
+
+### Key Learning
+
+Streaming improves responsiveness by showing partial output while the model continues generating the rest of the response.
