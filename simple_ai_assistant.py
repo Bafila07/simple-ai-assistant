@@ -56,49 +56,53 @@ def stream_chat(history):
     calls={}
     label_printed = False
 
-    for chunk in stream:
-        if not chunk.choices:
-            continue
-
-        delta = chunk.choices[0].delta
-
-        # Display normal text immediately
-        if delta.content:
-            if not label_printed:
-                print("Assistant:    ", end="", flush=True)
-                label_printed = True
-            print(delta.content, end="", flush=True)
-            full_response += delta.content
-
-
-
-        # Collect streamed tool-call fragments
-        for tool_call in delta.tool_calls or []:
-            index = tool_call.index
-
-            # Create a new tool call when its first fragment arrives
-            call = calls.setdefault(
-                index,
-                SimpleNamespace(
-                    id="",
-                    function=SimpleNamespace(
-                        name="",
-                        arguments="",
-                    ),
-                ),
-            )
-
-            # Combine the streamed fragments
-            if tool_call.id:
-                call.id = tool_call.id
-
-            if tool_call.function:
-                if tool_call.function.name:
-                    call.function.name += tool_call.function.name
-
-                if tool_call.function.arguments:
-                    call.function.arguments += tool_call.function.arguments
-                    
+    #Streaming Started
+    try:
+        for chunk in stream:
+                if not chunk.choices:
+                    continue
+        
+                delta = chunk.choices[0].delta
+        
+                # Display normal text immediately
+                if delta.content:
+                    if not label_printed:
+                        print("Assistant:    ", end="", flush=True)
+                        label_printed = True
+                    print(delta.content, end="", flush=True)
+                    full_response += delta.content
+        
+        
+        
+                # Collect streamed tool-call fragments
+                for tool_call in delta.tool_calls or []:
+                    index = tool_call.index
+        
+                    # Create a new tool call when its first fragment arrives
+                    call = calls.setdefault(
+                        index,
+                        SimpleNamespace(
+                            id="",
+                            function=SimpleNamespace(
+                                name="",
+                                arguments="",
+                            ),
+                        ),
+                    )
+        
+                    # Combine the streamed fragments
+                    if tool_call.id:
+                        call.id = tool_call.id
+        
+                    if tool_call.function:
+                        if tool_call.function.name:
+                            call.function.name += tool_call.function.name
+        
+                        if tool_call.function.arguments:
+                            call.function.arguments += tool_call.function.arguments
+    except KeyboardInterrupt as e:
+        print("\nStreaming interrupted by user.")
+        stream.close()
     if label_printed:
         print()
     return full_response, list(calls.values())
