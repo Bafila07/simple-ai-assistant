@@ -1,11 +1,15 @@
-import json
+# Standard library imports
 import os
-from utilities.utilities import log
 
+# Third-party imports
 from dotenv import load_dotenv
 from openai import OpenAI
-from tools import TOOLS, function_name_to_function_map
 
+# Local imports
+from tools import TOOLS, run_tool
+from utilities.utilities import log
+
+# Load environment variables from .env file
 load_dotenv()
 
 # Create OpenAI client connected to Ollama
@@ -25,7 +29,7 @@ messages = [
     }
 ]
 
-# Maximum number of steps the agent can take
+# Maximum number of agent steps allowed
 MAX_STEPS = 5
 
 
@@ -34,97 +38,70 @@ while True:
     # 1. Get input from the user
     user_input = input("PRIYANSHU-BAFILA: ")
 
-    # Exit the program if the user enters an exit command
+    # Exit the agent if the user enters an exit command
     if user_input.lower() in ["exit", "bye", "quit", "end"]:
         print("Assistant: See you later!")
         break
 
-    # 2. Add the user's message to conversation history
+    # 2. Add the user's message to the conversation history
     messages.append({
         "role": "user",
         "content": user_input
     })
 
-    # Track whether the agent completed successfully
+    # Track whether the agent reached a final answer
     completed = False
 
-    # 3. Ask the LLM for a response
+    # 3. Run the agent for a maximum of MAX_STEPS
     for step in range(MAX_STEPS):
 
+        # Send the conversation and available tools to the LLM
         response = client.chat.completions.create(
             model=os.getenv("OLLAMA_MODEL"),
             messages=messages,
             tools=TOOLS
         )
 
-        # Get the assistant's response
+        # Get the LLM's response
         assistant_message = response.choices[0].message
 
-        # 4. Save the assistant's response to history
+        # 4. Save the LLM response to the conversation history
         messages.append(assistant_message)
 
-        # If there are no tool calls, we have the final answer
+        # If the LLM does not request a tool, this is the final answer
         if not assistant_message.tool_calls:
             completed = True
             break
 
+        # Log how many tools the LLM wants to use
         log(
             f"Step {step + 1}: model requested tool calls :"
             f"{len(assistant_message.tool_calls)} tool_calls"
         )
 
-        # 5. Execute each requested tool
+        # 5. Execute each tool requested by the LLM
         for tool_call in assistant_message.tool_calls:
 
-            # Get the tool name requested by the model
-            tool_name = tool_call.function.name
+            # Send the tool call to the tool executor
+            result = run_tool(tool_call)
 
-            tool_args = {}
-
-            try:
-                # Convert JSON arguments into a Python dictionary
-                tool_args = json.loads(
-                    tool_call.function.arguments or "{}"
-                )
-
-                log(
-                    f" 🔧 Tool call  : {tool_name} "
-                    f"with arguments: {tool_args}"
-                )
-
-                # Find the actual Python function for this tool
-                tool_function = function_name_to_function_map.get(
-                    tool_name
-                )
-
-                # Run the tool with the given arguments
-                result = tool_function(**tool_args)
-
-            except Exception as e:
-
-                # Store the error instead of crashing the agent
-                result = (
-                    f"Error executing tool {tool_name}: {str(e)}"
-                )
-
-            # Show the tool's result
-            log(f"   └─ 📋 Result: {result}")
-
-            # 6. Add the tool result back to conversation history
+            # 6. Add the tool result back to the conversation
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_call.id,
                 "content": str(result)
             })
 
-    # Check whether the agent completed within MAX_STEPS
+    # Check if the agent failed to finish within MAX_STEPS
     if not completed:
 
+        # Give a fallback response when the step limit is reached
         fallback = (
             "Sorry, I couldn't provide a complete answer. "
             "Reached the maximum number of steps."
         )
 
+        # Save the fallback response to the conversation
         messages.append({
             "role": "assistant",
             "content": fallback
@@ -133,5 +110,5 @@ while True:
         print("Assistant:", fallback)
         continue
 
-    # 7. Print the final assistant response
+    # 7. Print the final answer from the LLM
     print("Assistant:", assistant_message.content or "")
