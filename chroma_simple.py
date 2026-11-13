@@ -35,15 +35,20 @@ for s in documents:
 
     
 
-chroma=chromadb.Client()
+chroma=chromadb.PersistentClient(path="./chroma_dbStorage")
 
-company_knowledge_base=chroma.create_collection(
+company_knowledge_base=chroma.get_or_create_collection(
     name="company_knowledge_base",
     configuration={
         "space": "cosine", 
     }
 )
 
+company_knowledge_base.upsert( #it will update if an Id already exists, otherwise it will insert a new record
+    ids=ids,
+    documents=documents,
+    embeddings=embeddings
+)
 company_knowledge_base.add(
     ids=ids,
     documents=documents,
