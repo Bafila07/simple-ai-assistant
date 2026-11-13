@@ -1,447 +1,314 @@
-# Simple AI Assistant
+<div align="center">
 
-A small, terminal-based AI assistant built with Python, Ollama, and the OpenAI-compatible chat-completions API.
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:6366f1,100:ec4899&height=220&section=header&text=Local%20AI%20Agent&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Python%20%C2%B7%20Ollama%20%C2%B7%20Tool%20Calling%20%E2%80%94%20built%20from%20scratch&descAlignY=55&descSize=20" width="100%"/>
 
-The project demonstrates how to build a tool-using AI agent that can:
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=800&color=A78BFA&center=true&vCenter=true&width=750&lines=An+AI+agent+that+runs+100%25+on+your+laptop+%F0%9F%92%BB;No+paid+API+key.+No+agent+framework.;It+remembers%2C+uses+tools+and+chains+them+%F0%9F%94%A7;Built+from+scratch+with+python-ai-agent-ollama" alt="Typing SVG"/>
 
-- Answer general questions using the model's own knowledge.
-- Retrieve the current date and time.
-- Retrieve weather information for a city.
-- Retrieve a configured user's saved city.
-- Maintain conversation history during a session.
-- Decide when to call tools and incorporate their results into a final answer.
-- Stream a model response through a separate standalone example.
+<br/><br/>
 
-This is an educational project focused on the basic agent loop: **receive a message, ask the model what to do, execute requested tools, return tool results, and produce a final answer**.
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-000000?style=for-the-badge&logo=ollama&logoColor=white)
+![OpenAI API](https://img.shields.io/badge/OpenAI--compatible-API-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Qwen3](https://img.shields.io/badge/Model-qwen3:4b-6366f1?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)
 
-## Features
+<br/>
+<br/>
 
-### Conversational terminal interface
+## 🚀 What is this?
 
-The main assistant runs in an interactive terminal session. User messages are sent to the configured model, and the resulting answer is printed back to the terminal.
+A **local AI agent built from scratch in Python**. It talks to a model running on [Ollama](https://ollama.com) through the OpenAI-compatible API, so there is **no paid key and no framework** hiding the logic.
 
-### OpenAI-compatible Ollama integration
+It remembers the conversation, follows a system prompt, streams its answers, and can use tools **in several steps**. It can also **answer from your own documents (RAG)**: it searches a small knowledge base, answers only from what it finds, cites the source, and says so when the documents do not contain the answer.
 
-The project uses the `openai` Python package, but points the client at an Ollama-compatible endpoint through `OLLAMA_BASE_URL`. This allows the code to use the familiar OpenAI chat-completions interface with a locally hosted or otherwise compatible model.
+> [!NOTE]
+> 🌱 **Work in progress:** This project is still evolving. Right now it includes features like:- Conversation with LLM, Memory building, Tool-Calling & Chained Tool-Calling, Streaming, RAG pipeline, VectorDB and more soon in the future.
 
-### Function/tool calling
+<br clear="right"/>
 
-The model receives descriptions of the available tools and can request them when appropriate:
+<br/>
 
-- `get_current_time`
-- `get_city_weather`
-- `get_user_city`
+## 🎥 See it in action
 
-The Python application executes the requested function and sends the result back to the model as a tool message.
+<img width="757" height="317" alt="Screenshot 2026-10-20 at 1 54 28 AM" src="https://github.com/user-attachments/assets/f314ca05-5399-4e96-9ae8-32515d55a235" />
 
-### Multi-step agent execution
+<!-- RAG SCREENSHOT: drag a screenshot of a company question here -->
+<img width="1399" height="321" alt="image" src="https://github.com/user-attachments/assets/7aa528a4-41bf-4cab-a34d-b4755664f2d4" />
 
-A single user request can result in several model/tool interactions. For example, a weather question about the user's location can require:
+<div align="center"><sub>The grey lines are the debug trace: you can watch the agent think.</sub></div>
 
-1. Calling `get_user_city`.
-2. Calling `get_city_weather` with the returned city.
-3. Generating a natural-language answer.
 
-The number of model iterations for one request is limited to five by `MAX_STEPS`.
+<br/>
 
-### Optional debug logging
+## ✨ Features
 
-Set `DEBUG=True` to display model tool requests, tool arguments, and tool results in colored debug output.
+| | Feature | Details |
+|---|---|---|
+| 🧠 | **Conversation memory** | The full history is sent on every call, because the model itself has no memory |
+| 🎭 | **System prompt** | Sets the agent's behavior and style |
+| 🔧 | **Tool calling** | Tools are described with JSON schema and run by our own code |
+| 🔗 | **Chained tool calls** | A loop with a step limit (`MAX_STEPS = 5`) so it can never run forever |
+| 📝 | **Required parameters** | `get_city_weather` needs a `city`, declared in the schema |
+| 🛡️ | **Safe errors** | Tool failures go back to the model as text, so the program does not crash |
+| 🪲 | **Debug trace** | Grey step-by-step logs, switched on with `DEBUG=True` |
+| ⚡ | **Streaming responses** | The reply is printed token by token as the model generates it, so you do not wait for the full answer |
+| ⏹️ | **Stop with Ctrl+C** | Press `Ctrl+C` while the assistant is answering to stop the stream. The partial reply is kept in the history and you can ask the next question |
+| 🧵 | **Streamed tool calls** | Tool requests arrive in small chunks while streaming. The code stitches them together, including several tool calls in one step |
+| 🚧 | **Step-limit fallback** | If the model has not given a final answer after `MAX_STEPS`, you get a clear "could not finish" message instead of a hang |
+| 📚 | **Agentic RAG** | The model decides when to call `search_knowledge_base`. Our code runs the search, so the model never touches the vector store |
+| ✂️ | **Chunking with metadata** | Each document is split at blank lines, one section per chunk, with the heading kept inside. Every chunk carries `source` and `chunk_id` |
+| 💾 | **Saved vector store** | Chunks are embedded once and saved to `vector_store.json`, so the next start loads instantly with no re-embedding |
+| 📎 | **Grounded answers with citations** | Company answers come only from the retrieved text, with a source like `(leave_policy.txt #3)` |
+| 🧪 | **Chroma example** | One standalone script in `Code Snippets/` shows a vector database with our own embeddings and persistence. Not wired into the agent |
 
-### Streaming example
+<br/>
 
-`stream_test.py` provides a separate minimal example of streaming model output token-by-token instead of waiting for the complete response.
+## 🧩 How it works
 
-## Project structure
+The model **never runs code**. It only asks for a tool. Our Python code runs it, sends the result back, and the loop repeats until the model answers in plain text.
 
-```text
-.
-├── README.md
-├── simple_ai_assistant.py
-├── tools.py
-├── stream_test.py
-├── LEARNINGS.md
-├── .gitignore
-└── utilities/
-    └── utilities.py
+```mermaid
+flowchart LR
+    U([You]) --> M[simple_ai_assistant.py]
+    M -->|history and tool list| L{{LLM on Ollama}}
+    L -->|tool request| R[tools.run_tool]
+    R --> T1[get_current_time]
+    R --> T2[get_city_weather]
+    R --> T3[get_user_city]
+    R --> T4[search_knowledge_base]
+    T4 --> K[rag.py]
+    K --> V[vector_store.json]
+    T1 -->|result as text| M
+    T2 -->|result as text| M
+    T3 -->|result as text| M
+    T4 -->|top 3 chunks| M
+    L -->|final answer| A([Assistant])
 ```
 
-### `simple_ai_assistant.py`
+<details>
+<summary><b>📖 The 4-step loop in words (click to expand)</b></summary>
 
-The main executable application. It:
+1. We send the conversation plus the list of tools to the model.
+2. The model replies with a **request** such as `get_city_weather(city="Bangalore")`, not an answer.
+3. Our code runs the real function and sends the result back with the `tool` role.
+4. The model reads the result and either asks for another tool or writes the final answer.
 
-1. Loads environment variables.
-2. Creates an OpenAI-compatible client configured for Ollama.
-3. Initializes the system prompt and conversation history.
-4. Reads user input in a loop.
-5. Sends the conversation and tool definitions to the model.
-6. Executes any requested tools.
-7. Sends tool results back to the model.
-8. Prints the final answer.
+This repeats up to `MAX_STEPS` times per question.
 
-### `tools.py`
+</details>
 
-Contains:
+> ⚡ **Streaming:** each call to the model is made with `stream=True`. Text is printed as soon as it arrives, while any tool request is collected piece by piece and run only after the stream ends.
 
-- The concrete tool implementations.
-- The tool schemas exposed to the model.
-- The mapping from model-requested tool names to Python functions.
-- The generic tool-call dispatcher.
+<br/>
 
-### `stream_test.py`
+## 📚 How RAG works here
 
-A standalone streaming-response example. It does not use the assistant's interactive loop or tools.
+RAG (Retrieval-Augmented Generation) means: **find the relevant text from our own data first, and give it to the model, so it answers from that text.** Three workers do three different jobs:
 
-### `utilities/utilities.py`
+| Worker | Job |
+|---|---|
+| **Embedding model** (`nomic-embed-text`) | Turns text into vectors. It does not search |
+| **Our Python code** (`rag.py`) | Compares vectors with cosine similarity, ranks the chunks, returns the top 3 |
+| **Chat model** (`qwen3:4b`) | Reads the returned chunks and writes the answer |
 
-Contains the shared `log()` helper used for optional debug output.
+**The LLM never searches. Our Python code does.**
 
-### `LEARNINGS.md`
+| Phase | When | What happens |
+|---|---|---|
+| **Indexing** | Once, on the first start | Load the `.txt` files, split into chunks, embed every chunk, save to `knowledge_base/vector_store.json` |
+| **Querying** | Every company question | The model calls `search_knowledge_base`, our code embeds the question, finds the top 3 chunks and returns them as a tool message. The model answers from them |
 
-Documents a prompt-design lesson: tools should extend the assistant's capabilities, not prevent it from answering questions that do not require tools.
+The retrieved chunks are the "augmented" part: they are added to what the model reads, only for that one call. RAG teaches the model nothing permanently.
 
-## How the agent works
+> 💡 **When you add a tool, update the system prompt too.** If the system prompt says tools are only for time and weather, the model may never call the knowledge base tool.
 
-The main runtime flow is:
+## 🗂️ Knowledge base
 
-```text
-User enters a message
-        │
-        ▼
-Add message to conversation history
-        │
-        ▼
-Send conversation and tool definitions to the model
-        │
-        ├── Model returns normal text
-        │       └── Print final answer
-        │
-        └── Model requests one or more tools
-                │
-                ▼
-        Parse tool arguments
-                │
-                ▼
-        Execute Python function
-                │
-                ▼
-        Add result to conversation history
-                │
-                ▼
-        Ask model for the next response
-```
+The sample knowledge base is a **fake company, Zorvex Technologies**, so the model cannot know its facts from training. It lives in `knowledge_base/`:
 
-The conversation history is stored in the `messages` list in memory. It includes:
+| File | Topic |
+|---|---|
+| `leave_policy.txt` | Casual, earned, sick, maternity, paternity, bereavement leave |
+| `medical_policy.txt` | Insurance, claims, long medical leave, maternity cover |
+| `hr_docs.txt` | Working hours, work from home, onboarding, reviews, notice period |
+| `hiring_process.txt` | Interview stages, offer, referral bonus, joining |
+| `tech_docs.txt` | Code review, deployments, branches, on-call |
+| `rca_docs.txt` | A root cause analysis report (INC-4021) |
+| `travel_expense.txt` | Reimbursement, flights, daily allowance, receipts |
 
-- The initial system instruction.
-- User messages.
-- Assistant messages.
-- Tool results.
+**To add your own document:**
 
-The history is preserved while the process is running, so later questions can refer to earlier messages. It is not saved to disk and is lost when the program exits.
+1. Create a `.txt` file in `knowledge_base/`.
+2. Write a heading line first, then the text, with **one blank line between sections**. Each section becomes one chunk.
+3. **Delete `knowledge_base/vector_store.json`** and run the agent. It rebuilds the store.
 
-## Available tools
+**Try these questions:**
 
-### `get_current_time`
+- `How many weeks of maternity leave do I get?`
+- `How do I get my money back after a business trip?`
+- `How much sick leave do I get, and what if I need more?`
+- `What are the core working hours at Zorvex, and what time is it now?`
+- `What was the root cause of INC-4021?`
+- `What is the company's policy on pet insurance?` (not in any document)
+- `What is Python?` (general question, no search)
 
-Returns the current date and time from the machine running the assistant.
+## 🧪 Vector database example (Chroma)
 
-Example user request:
+The agent keeps its vectors in a simple JSON file, `vector_store.json`, so you can see exactly what is inside. A **vector database** does the same job with more features: saving to disk, fast approximate search, update and delete by ID, metadata filtering and scale.
 
-```text
-What time is it?
-```
+`Code Snippets/chroma_simple.py` is a small standalone example of [Chroma](https://www.trychroma.com/), a free vector database that runs on your laptop. It:
 
-The result is formatted as:
+- embeds four sample chunks with our own `nomic-embed-text` model,
+- stores them with `PersistentClient` (saved to the `chromadbStorage/` folder),
+- uses cosine distance,
+- and searches with `query_embeddings`, so the question and the chunks use the same embedding model.
 
-```text
-YYYY-MM-DD HH:MM:SS
-```
-
-### `get_city_weather`
-
-Retrieves current weather information from `wttr.in`.
-
-Example user request:
-
-```text
-What is the weather in London?
-```
-
-The tool requests:
-
-```text
-https://wttr.in/London?format=3
-```
-
-The request has a ten-second timeout. A successful response returns the weather service's text. Non-success HTTP responses return a friendly failure message.
-
-This tool requires network access.
-
-### `get_user_city`
-
-Returns the user's saved city. At present, the value is hard-coded:
-
-```text
-Dehradun
-```
-
-Example user requests:
-
-```text
-Where do I live?
-What city am I from?
-```
-
-This is currently a simple placeholder for a future profile, database, or configuration-backed implementation.
-
-## Requirements
-
-You need:
-
-- Python 3.
-- An Ollama installation or another OpenAI-compatible chat-completions server.
-- A chat model available through that server.
-- Network access if you want to use the weather tool.
-
-The Python dependencies used by the project are:
-
-- `openai`
-- `python-dotenv`
-- `requests`
-
-The repository currently does not include a `requirements.txt` or `pyproject.toml`, so these packages must be installed manually.
-
-## Installation
-
-### 1. Create a virtual environment
-
-From the repository root:
+`upsert` makes the script safe to re-run, because it updates an ID that already exists instead of failing.
 
 ```bash
+pip install chromadb
+python3 "Code Snippets/chroma_simple.py"
+```
+
+> The agent itself **does not use Chroma yet**. Only `rag.py` would need to change, because the tool just calls `search()`. `chromadb` is not in `requirements.txt`, because the agent does not need it.
+
+## 🛠️ Available tools
+
+| Tool | What it does |
+|---|---|
+| `get_current_time` | Returns the current local date and time |
+| `get_city_weather(city)` | One-line weather from the free `wttr.in` service |
+| `get_user_city` | Returns the user's city (hard-coded to `Bangalore` as a demo value) |
+| `search_knowledge_base(query)` | Searches the company documents and returns the top 3 matching chunks, each labelled with its source |
+
+<br/>
+
+## ⚡ Quick start
+
+**Prerequisites:** Python 3.10+ and [Ollama](https://ollama.com/download) installed and running.
+
+```bash
+# 1. Download the chat model and the embedding model
+ollama pull qwen3:4b
+ollama pull nomic-embed-text
+
+# 2. Get the code
+git clone https://github.com/MAZHARMIK/python-ai-agent-ollama.git
+cd python-ai-agent-ollama
+
+# 3. Create and activate a virtual environment
 python -m venv .venv
-```
+# Windows:    .venv\Scripts\activate
+# Mac/Linux:  source .venv/bin/activate
 
-Activate it on macOS or Linux:
+# 4. Install dependencies
+pip install -r requirements.txt
 
-```bash
-source .venv/bin/activate
-```
+# 5. Create your settings file
+cp .env.example .env        # Windows: copy .env.example .env
 
-Activate it on Windows PowerShell:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-### 2. Install dependencies
-
-```bash
-pip install openai python-dotenv requests
-```
-
-### 3. Configure the environment
-
-Create a `.env` file in the repository root:
-
-```env
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_API_KEY=ollama
-OLLAMA_MODEL=your-model-name
-DEBUG=False
-```
-
-Replace `your-model-name` with a model available in your Ollama installation.
-
-For a local Ollama server, the URL is commonly:
-
-```text
-http://localhost:11434/v1
-```
-
-The API key is accepted by the OpenAI client but is typically not used for local Ollama authentication. The value can still be set to a placeholder such as `ollama`.
-
-## Running the assistant
-
-Start the interactive assistant with:
-
-```bash
+# 6. Run (from the project root)
 python simple_ai_assistant.py
 ```
 
-You should see a prompt similar to:
+Type `exit`, `quit`, `bye` or `goodbye` to stop.  
+> ⏳ **First start:** the agent builds the vector store once (it embeds every chunk), so expect a short pause before the first prompt. Later starts load `vector_store.json` instantly.
+
+> 📂 Always run the agent **from the project root**, because paths in `.env` are relative.
+
+<br/>
+
+## ⚙️ Configuration
+
+Settings live in `.env` (see `.env.example`):
+
+| Name | Meaning |
+|---|---|
+| `BASE_URL` | OpenAI-compatible endpoint. For Ollama: `http://127.0.0.1:11434/v1` |
+| `API_KEY` | Required by the client, ignored by Ollama. Any dummy value works |
+| `MODEL` | Exact model name from `ollama list`. It must support tool calling |
+| `DEBUG` | Set to `True` (capital T) to show the grey debug trace |
+| `EMBED_MODEL` | The embedding model, for example `nomic-embed-text`. This is **not** the chat model |
+| `KB_FOLDER` | Folder with your `.txt` documents. Default: `knowledge_base` |
+| `VECTOR_STORE_FILE` | Where the embedded chunks are saved. Default: `knowledge_base/vector_store.json` |
+
+> 💡 Rules for `.env`: `NAME=value`, no spaces around `=`, no quotes. Restart the program after editing it.
+
+<br/>
+
+## ➕ Add your own tool
+
+Three changes in `tools.py`, and the chat loop stays untouched:
+
+1. ✍️ Write the Python function.
+2. 📋 Add its description to the `TOOLS` list (name, description, parameters, `required`).
+3. 🗺️ Register it in `FUNCTION_NAME_TO_FUNCTION_MAP`.
+
+> The `description` matters: the model reads it to decide when to use the tool.  
+> Also check the system prompt in simple_ai_assistant.py, so it does not tell the model to avoid your new tool.
+
+<br/>
+
+## 📁 Project structure
 
 ```text
-PRIYANSHU-BAFILA:
+python-ai-agent-ollama/
+├── simple_ai_assistant.py    chat loop, memory, streaming and the agent loop
+├── tools.py                  tool functions, TOOLS schema, run_tool()
+├── rag.py                    chunking, embeddings, vector store and search()
+├── knowledge_base/
+│   ├── *.txt                 the 7 sample documents (Zorvex Technologies)
+│   └── vector_store.json     generated on the first run (not committed)
+├── Utilities/
+│   └── utilities.py          grey debug log() helper
+├── Code Snippets/            scratch experiments from the videos, including a Chroma example (not imported by the agent)
+├── .env.example              settings template
+├── requirements.txt          dependencies
+└── LICENSE                   MIT
 ```
 
-Enter a question and press Enter. To stop the assistant, enter any of:
+<br/>
 
-```text
-exit
-bye
-quit
-end
-```
+## ⚠️ Honest limitations
 
-Example session:
+- Memory is kept in RAM and is lost when the program exits.
+- The history is not trimmed, so very long chats can exceed the model's context window.
+- Small local models can pick the wrong tool or skip arguments. A larger model is more reliable.
+- `get_user_city` is a hard-coded demo value. In a real app it would come from a profile or database.
+- The weather tool needs internet, and `wttr.in` is a free service that can be slow or down.
+- Tool output is not treated as untrusted, which is why the tools are read-only. Only put documents you trust in the knowledge base.
+- If you press `Ctrl+C` while the model is answering, any half-received tool request is dropped and only the partial text is kept in the history.
+- The vector store can go stale. Editing a document or changing `EMBED_MODEL` does not rebuild it automatically. Delete `vector_store.json` to rebuild.
+- There is no score threshold. The search always returns the top 3 chunks, even when none is relevant. Saying “I could not find this” depends on the model following the system prompt, and a small model may ignore it.
+- Retrieval can return the wrong chunk, and the model may then answer confidently from it. Turn on `DEBUG=True` to check which chunks were retrieved.
+- Embeddings are weaker on exact strings such as IDs and error codes. Real systems often add keyword search too (hybrid search).
+- Search compares the question with every chunk (brute force). Fine for a small knowledge base, too slow for millions. Vector databases (see the Chroma example) solve that, but the agent does not use one yet.
+- Splitting by blank-line sections works because the sample documents are written in sections. Other documents may need other chunking strategies.
 
-```text
-PRIYANSHU-BAFILA: What is Python?
-Assistant: Python is a high-level programming language ...
+<br/>
 
-PRIYANSHU-BAFILA: What city do I live in?
-Assistant: Your saved city is Dehradun.
+<div align="center">
 
-PRIYANSHU-BAFILA: exit
-Assistant: See you later!
-```
+### 🙌 If this helped you, a ⭐ goes a long way. Thank you!
 
-## Running the streaming example
+[![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@codestorywithMIK)
+[![WhatsApp](https://img.shields.io/badge/WhatsApp_Channel-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029Va6kVSjICVfiVdsHgi1A)
+[![Instagram](https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white)](https://www.instagram.com/codestorywithmik/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mazhar-imam-khan-95a34ab3/)
 
-To run the standalone streaming demonstration:
+<sub>Licensed under <a href="LICENSE">MIT</a></sub>
 
-```bash
-python stream_test.py
-```
+---
 
-This sends the fixed prompt `Explain AI in 100 words` and prints each response fragment as it arrives.
+## ☕ Support codestorywithMIK (No Pressure)
 
-Unlike the main assistant, this script:
+Education here is **100% free and always will be.** 💙
+If the content helped you and you'd like to support the channel with a coffee:
 
-- Does not prompt for user input.
-- Does not maintain a conversation.
-- Does not expose tools.
-- Does not implement a multi-step agent loop.
+**UPI:** `imammazhar4@ybl`
 
-## Configuration reference
+---
 
-| Variable | Required | Description |
-|---|---:|---|
-| `OLLAMA_BASE_URL` | Yes | Base URL for the OpenAI-compatible model API. |
-| `OLLAMA_API_KEY` | Yes by client configuration | API key passed to the OpenAI client. Local Ollama commonly accepts a placeholder value. |
-| `OLLAMA_MODEL` | Yes | Name of the model used for chat completions. |
-| `DEBUG` | No | Enable debug logs only when set exactly to `True`. |
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:ec4899,100:6366f1&height=120&section=footer" width="100%"/>
 
-The `.env` file is ignored by Git through `.gitignore`, so local credentials and configuration are not intended to be committed.
-
-## Error handling
-
-Tool execution is wrapped by `run_tool()` in `tools.py`. This protects the main assistant from many tool-related failures, including:
-
-- Invalid JSON arguments from the model.
-- Missing or unexpected function arguments.
-- Unknown tool names.
-- Network failures from the weather request.
-- Exceptions raised by tool functions.
-
-Instead of terminating the process, the dispatcher returns an error string to the model as the tool result. The model can then explain the issue or provide an alternative response.
-
-The main agent also has a step limit. If the model requests tools continuously for all five allowed steps, the assistant returns:
-
-```text
-Sorry, I couldn't provide a complete answer. Reached the maximum number of steps.
-```
-
-## Design choices
-
-### General knowledge is not restricted by tools
-
-The system prompt explicitly tells the model to answer general questions using its own knowledge. Tools are supplemental capabilities for information such as current weather or the machine's current time.
-
-### Tool schemas are separate from implementation
-
-The model sees the JSON-style definitions in `TOOLS`, while Python executes functions from `function_name_to_function_map`. This separation makes it possible to describe tools to the model without exposing implementation details.
-
-### The model controls tool selection
-
-The Python program provides the available tools but does not independently classify every user request. The model chooses whether to call a tool based on the tool descriptions and the conversation.
-
-### The project uses an in-memory conversation
-
-This keeps the example simple and avoids requiring a database or file format. It also means there is no persistence, user account system, or cross-session memory.
-
-## Current limitations
-
-The project is intentionally minimal and has several limitations:
-
-- There is no dependency manifest.
-- There are no automated tests.
-- There is no explicit startup validation for missing environment variables.
-- Conversation history is not persisted.
-- `get_user_city()` always returns `Dehradun`.
-- The main assistant does not stream its final response.
-- Weather depends on the availability of the external `wttr.in` service.
-- The application has no authentication or multi-user support.
-- There is no structured logging system.
-- There is no command-line configuration interface.
-- Both executable scripts run their code at import time because they do not use an `if __name__ == "__main__":` guard.
-- The number of tools and their mapping are maintained manually.
-
-## Possible extensions
-
-Natural next improvements include:
-
-1. Add `requirements.txt` or `pyproject.toml`.
-2. Add a `main()` function and `if __name__ == "__main__":` guards.
-3. Validate required environment variables before creating the client.
-4. Move the saved city into configuration or a user profile.
-5. Add unit tests for tools and the dispatcher.
-6. Add streaming output to the main assistant.
-7. Add more tools, such as web search, reminders, or calculator operations.
-8. Persist conversation history.
-9. Add structured logging and clearer error types.
-10. Add command-line arguments for model, endpoint, and debug mode.
-
-## Troubleshooting
-
-### The client cannot connect to Ollama
-
-Check that:
-
-- Ollama is running.
-- `OLLAMA_BASE_URL` points to the correct endpoint.
-- The configured model exists.
-- The model name in `OLLAMA_MODEL` is spelled correctly.
-
-### The model does not call tools
-
-Tool calling depends on model support and model behavior. Check that:
-
-- The model supports tool/function calling.
-- The tool descriptions are being sent successfully.
-- The request is specific enough to require live or user-specific information.
-- `DEBUG=True` is set so you can inspect tool requests.
-
-### Weather requests fail
-
-Check that:
-
-- The machine has internet access.
-- `wttr.in` is reachable.
-- The city name is valid.
-- The request is not being blocked by a firewall or proxy.
-
-### Python reports missing packages
-
-Install the required dependencies inside the active virtual environment:
-
-```bash
-pip install openai python-dotenv requests
-```
-
-## Reading path
-
-For a quick understanding of the project, read the files in this order:
-
-1. `simple_ai_assistant.py` — the complete interactive agent loop.
-2. `tools.py` — tool implementations, schemas, and dispatch.
-3. `utilities/utilities.py` — debug logging.
-4. `stream_test.py` — standalone streaming usage.
-5. `LEARNINGS.md` — prompt-design rationale.
-
-The most important control flow is in `simple_ai_assistant.py`, while the most important extension point is `tools.py`.
-
-## License
-
-No license file is currently included in the repository. Add an explicit license before distributing or reusing the project publicly.
+</div>
