@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 from openai import OpenAI
 import numpy as np
@@ -10,6 +11,7 @@ client = OpenAI(
 )
 EMBED_MODEL=os.getenv("EMBED_MODEL")
 KB_FOLDER=os.getenv("KB_FOLDER")
+VECTOR_STORE_FILE=os.getenv("VECTOR_STORE_FILE")
 
 def get_embeddings(text):
     response=client.embeddings.create(
@@ -105,10 +107,32 @@ def create_chunks():
         chunks.extend(chunk_document(document))
     return chunks
 
-# Let's test the chunking and search functions
-chunks=create_chunks()
-chunks=add_embeddings(chunks)
-print(f"Chunks created and embeddings added. Total chunks: {len(chunks)}\n")
+def save_vector_store(chunks):
+    with open(VECTOR_STORE_FILE,"w",encoding="UTF-8") as f:
+        json.dump(chunks,f,ensure_ascii=False,indent=4)
+
+def load_vector_store():
+    with open(VECTOR_STORE_FILE,"r",encoding="UTF-8") as f:
+        return json.load(f)
+chunks = []
+
+if os.path.exists(VECTOR_STORE_FILE):
+    chunks = load_vector_store()
+    print(
+        f"Loaded {len(chunks)} chunks from "
+        f"{VECTOR_STORE_FILE}"
+    )
+else:
+    chunks = create_chunks()
+    chunks = add_embeddings(chunks)
+    save_vector_store(chunks)
+
+    print(
+        f"Created {len(chunks)} chunks and saved to "
+        f"{VECTOR_STORE_FILE}"
+    )
+ 
+print(f"Total chunks available: {len(chunks)}\n")
 user_query="What are the benefits of Maternity Leave?"
 
 test(user_query,chunks,top_k=3)
