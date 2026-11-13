@@ -30,10 +30,10 @@ It remembers the conversation, follows a system prompt, streams its answers, and
 
 ## 🎥 See it in action
 
-<img width="757" height="317" alt="Screenshot 2026-10-20 at 1 54 28 AM" src="https://github.com/user-attachments/assets/f314ca05-5399-4e96-9ae8-32515d55a235" />
+<img width="757" height="317" alt="Screenshot 2026-10-20 at 1 54 28 AM" src="https://github.com/Bafila07/simple-ai-assistant/issues/2#issue-6377591896" />
 
 <!-- RAG SCREENSHOT: drag a screenshot of a company question here -->
-<img width="1399" height="321" alt="image" src="https://github.com/user-attachments/assets/7aa528a4-41bf-4cab-a34d-b4755664f2d4" />
+<img width="1399" height="321" alt="image" src="https://github.com/Bafila07/simple-ai-assistant/issues/3#issue-6377614138" />
 
 <div align="center"><sub>The grey lines are the debug trace: you can watch the agent think.</sub></div>
 
