@@ -1,0 +1,14 @@
+{
+  "title": "what is join in SQL? how to implement fu",
+  "updated": "2026-11-22 21:38:23",
+  "messages": [
+    {
+      "role": "user",
+      "content": "what is join in SQL? how to implement full outer join in MySQL?"
+    },
+    {
+      "role": "assistant",
+      "content": "A SQL JOIN combines rows from two or more tables based on related columns. In MySQL, FULL OUTER JOIN is supported starting from version 8.0. For older versions, simulate it using a UNION of LEFT JOIN and RIGHT JOIN on the same condition. Example:  \n`SELECT ... FROM table1 LEFT JOIN table2 ON ...`  \n`UNION ALL`  \n`SELECT ... FROM table1 RIGHT JOIN table2 ON ...`  \n\n(No tool calls needed for this technical question.)"
+    }
+  ]
+}
